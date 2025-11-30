@@ -1,0 +1,100 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions available to all rules
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.isAnonymous == false;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Controls access to user profile documents and all their subcollections.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow get, create, update, delete: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+
+      /**
+       * @description Controls access to resume documents nested under a user profile.
+       * @path /users/{userId}/resumes/{resumeId}
+       */
+      match /resumes/{resumeId} {
+        allow read, write: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      }
+
+      /**
+       * @description Controls access to generated resume documents nested under a user profile.
+       * @path /users/{userId}/generatedResumes/{generatedResumeId}
+       */
+      match /generatedResumes/{generatedResumeId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      /**
+       * @description Controls access to quiz attempt documents nested under a user profile.
+       * @path /users/{userId}/quizAttempts/{quizAttemptId}
+       */
+      match /quizAttempts/{quizAttemptId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+      
+      /**
+       * @description Controls access to aptitude test attempt documents nested under a user profile.
+       * @path /users/{userId}/aptitudeTestAttempts/{aptitudeTestAttemptId}
+       */
+      match /aptitudeTestAttempts/{aptitudeTestAttemptId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      /**
+       * @description Controls access to suggested job documents nested under a user profile.
+       * @path /users/{userId}/suggestedJobs/{suggestedJobId}
+       */
+      match /suggestedJobs/{suggestedJobId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+      
+      /**
+       * @description Controls access to suggested project documents nested under a user profile.
+       * @path /users/{userId}/projectSuggestions/{suggestionId}
+       */
+      match /projectSuggestions/{suggestionId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-generated notes.
+       * @path /users/{userId}/notes/{noteId}
+       */
+      match /notes/{noteId} {
+        allow get, delete, update: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+        allow list: if isSignedIn() && isOwner(userId);
+      }
+    }
+
+    /**
+     * @description Controls access to job posting documents.
+     * @path /jobs/{jobId}
+     */
+    match /jobs/{jobId} {
+      allow get, list: if isSignedIn();
+      allow write: if false;
+    }
+    
+    /**
+     * @description Controls access to course documents.
+     * @path /courses/{courseId}
+     */
+    match /courses/{courseId} {
+      allow get, list: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}
